@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="nav"></nav>
+  <div class="container">
+    <div class="breadcrumb"><a href="/">Home</a> / <a href="/">Products</a> / <span id="bc-name">...</span></div>
+    <div class="detail-grid" id="detail">Loading...</div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const id = new URLSearchParams(location.search).get('id');
+    const isValidProductId = /^[a-fA-F0-9]{24}$/.test(id || '');
+
+    if (!id || !isValidProductId) {
+      document.getElementById('detail').innerHTML = `
+        <p class="error">No valid product selected.</p>
+        <a class="btn" href="/">← Go to Shop</a>`;
+    } else {
+      let qty = 1;
+      let product = null;
+
+      api('/api/products')
+        .then((products) => {
+          const p = products.find((item) => item._id === id);
+          if (!p) throw new Error('Product not found');
+          product = p;
+          document.getElementById('bc-name').textContent = p.name;
+          const mrp = Math.round(p.price * 1.25);
+          const off = Math.round(100 - (p.price / mrp) * 100);
+          document.getElementById('detail').innerHTML = `
+            <img class="detail-img" src="${p.image}" onerror="this.onerror=null;this.src=fallbackImg('${p.name.replace(/'/g,"")}','${p.category}')" alt="${p.name}">
+            <div class="text">
+              <h2>${p.name}</h2>
+              <div class="rating">★★★★☆ <span>(${(Math.random()*80+30|0)} ratings)</span></div>
+              <div class="detail-price-row">
+                <span class="price">₹${p.price}</span>
+                <span class="old">₹${mrp}</span>
+                <span class="off">${off}% off</span>
+              </div>
+              <span class="stock-badge">✔ In Stock</span>
+              <p style="color:#475569; line-height:1.6">${p.description}</p>
+
+              <ul class="features">
+                <li>100% original product</li>
+                <li>Free delivery in 3-5 days</li>
+                <li>7-day easy return policy</li>
+                <li>1 year warranty included</li>
+              </ul>
+
+              <div class="qty-row">
+                <b>Quantity:</b>
+                <div class="qty-box">
+                  <button onclick="changeQty(-1)">−</button>
+                  <span id="qty">1</span>
+                  <button onclick="changeQty(1)">+</button>
+                </div>
+              </div>
+
+              <div class="action-row">
+                <button onclick="addNow()">🛒 Add to Cart</button>
+                <button style="background:#16a34a" onclick="buyNow()">⚡ Buy Now</button>
+              </div>
+              <a class="btn btn-light" href="/">← Back to Products</a>
+
+              <div class="delivery-box">
+                📦 <b>Delivery:</b> Estimated in 3-5 business days<br>
+                🔄 <b>Returns:</b> Easy 7-day return if damaged/wrong item
+              </div>
+            </div>`;
+        })
+        .catch(() => {
+          document.getElementById('detail').innerHTML = `
+            <p class="error">This product is no longer available.</p>
+            <a class="btn" href="/">← Go to Shop</a>`;
+        });
+
+      function changeQty(d) {
+        qty = Math.max(1, qty + d);
+        document.getElementById('qty').textContent = qty;
+      }
+
+      function addNow() {
+        const cart = getCart();
+        const item = cart.find((x) => x._id === product._id);
+        if (item) item.qty += qty;
+        else cart.push({ _id: product._id, name: product.name, price: product.price, image: product.image, qty });
+        saveCart(cart);
+        alert('Added to cart ✅');
+      }
+
+      function buyNow() {
+        addNow();
+        location.href = '/cart.html';
+      }
+    }
+  </script>
+</body>
+</html>

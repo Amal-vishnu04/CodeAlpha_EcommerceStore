@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Orders</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="nav"></nav>
+  <div class="container">
+    <h2>My Orders</h2>
+    <div id="orders">Loading...</div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    api('/api/orders')
+      .then((list) => {
+        document.getElementById('orders').innerHTML = list.length
+          ? list.map((o) => `
+            <div class="order">
+              <b>Order #${o._id.slice(-6)}</b> — ${new Date(o.createdAt).toLocaleString()}
+              <ul style="margin:10px 0 10px 20px">
+                ${o.items.map((i) => `<li>${i.name} × ${i.qty} = ₹${i.price * i.qty}</li>`).join('')}
+              </ul>
+              <b>Total: ₹${o.total}</b><br>
+              <small>Address: ${o.address}</small>
+            </div>`).join('')
+          : '<p>No orders yet.</p>';
+      })
+      .catch(() => (location.href = '/login.html'));
+  </script>
+</body>
+</html>

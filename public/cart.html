@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="nav"></nav>
+  <div class="container">
+    <h2>Shopping Cart</h2>
+    <div id="cart-items"></div>
+    <div id="checkout">
+      <h3 style="margin:20px 0 10px">Total: ₹<span id="total">0</span></h3>
+      <textarea id="address" rows="3" placeholder="Delivery address"></textarea>
+      <p class="error" id="error"></p>
+      <button onclick="placeOrder()">Place Order</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function render() {
+      const cart = getCart();
+      const box = document.getElementById('cart-items');
+      if (!cart.length) {
+        box.innerHTML = '<p>Your cart is empty 🛒</p>';
+        document.getElementById('checkout').style.display = 'none';
+        return;
+      }
+      box.innerHTML = cart.map((i, idx) => `
+        <div class="cart-row">
+          <img src="${i.image}">
+          <div class="grow"><b>${i.name}</b><br>₹${i.price}</div>
+          <button onclick="change(${idx}, -1)">−</button>
+          <span>${i.qty}</span>
+          <button onclick="change(${idx}, 1)">+</button>
+          <b>₹${i.price * i.qty}</b>
+          <button style="background:#dc2626" onclick="removeItem(${idx})">✕</button>
+        </div>`).join('');
+      document.getElementById('total').textContent = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    }
+
+    function change(idx, d) {
+      const cart = getCart();
+      cart[idx].qty += d;
+      if (cart[idx].qty < 1) cart.splice(idx, 1);
+      saveCart(cart);
+      render();
+    }
+
+    function removeItem(idx) {
+      const cart = getCart();
+      cart.splice(idx, 1);
+      saveCart(cart);
+      render();
+    }
+
+    async function placeOrder() {
+      if (!localStorage.getItem('token')) {
+        alert('Please login to place order');
+        return (location.href = '/login.html');
+      }
+      const address = document.getElementById('address').value.trim();
+      try {
+        await api('/api/orders', 'POST', {
+          items: getCart().map((i) => ({ id: i._id, qty: i.qty })),
+          address
+        });
+        saveCart([]);
+        alert('Order placed successfully 🎉');
+        location.href = '/orders.html';
+      } catch (e) {
+        document.getElementById('error').textContent = e.message;
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

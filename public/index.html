@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopEasy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="nav"></nav>
+
+  <div class="hero">
+    <h1>Shop Smarter, Not Harder 🛍️</h1>
+    <p>Best deals on electronics, fashion & accessories — delivered fast.</p>
+  </div>
+
+  <div class="container">
+    <div class="shop-layout">
+      <aside class="filters">
+        <h4>Search</h4>
+        <input type="text" id="search" class="search-box" placeholder="Search products...">
+
+        <h4>Category</h4>
+        <div class="cat-list" id="cat-list"></div>
+
+        <h4>Price Range</h4>
+        <div class="price-inputs">
+          <input type="number" id="minPrice" placeholder="Min">
+          <span>-</span>
+          <input type="number" id="maxPrice" placeholder="Max">
+        </div>
+
+        <h4></h4>
+        <button style="width:100%" onclick="applyFilters()">Apply Filters</button>
+        <br><br>
+        <button class="clear-btn" onclick="clearFilters()">Clear all filters</button>
+      </aside>
+
+      <div>
+        <div class="result-bar">
+          <span id="result-count">Loading...</span>
+          <select id="sort" onchange="applyFilters()">
+            <option value="">Sort: Featured</option>
+            <option value="low">Price: Low to High</option>
+            <option value="high">Price: High to Low</option>
+          </select>
+        </div>
+        <div class="grid" id="products"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2026 <span>ShopEasy</span> — Built by Amal | CodeAlpha Internship</footer>
+
+  <script src="app.js"></script>
+  <script>
+    let selectedCategories = [];
+
+    api('/api/categories').then((cats) => {
+      document.getElementById('cat-list').innerHTML = cats.map((c) => `
+        <label><input type="checkbox" value="${c}" onchange="toggleCat('${c}')"> ${c}</label>
+      `).join('');
+    });
+
+    function toggleCat(c) {
+      selectedCategories = selectedCategories.includes(c)
+        ? selectedCategories.filter((x) => x !== c)
+        : [...selectedCategories, c];
+      applyFilters();
+    }
+
+    function clearFilters() {
+      selectedCategories = [];
+      document.getElementById('search').value = '';
+      document.getElementById('minPrice').value = '';
+      document.getElementById('maxPrice').value = '';
+      document.getElementById('sort').value = '';
+      document.querySelectorAll('.cat-list input').forEach((c) => (c.checked = false));
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const params = new URLSearchParams();
+      const search = document.getElementById('search').value.trim();
+      const minPrice = document.getElementById('minPrice').value;
+      const maxPrice = document.getElementById('maxPrice').value;
+      const sort = document.getElementById('sort').value;
+
+      if (search) params.set('search', search);
+      if (minPrice) params.set('minPrice', minPrice);
+      if (maxPrice) params.set('maxPrice', maxPrice);
+      if (sort) params.set('sort', sort);
+      if (selectedCategories.length === 1) params.set('category', selectedCategories[0]);
+
+      api('/api/products?' + params.toString()).then((list) => {
+        const filtered = selectedCategories.length > 1
+          ? list.filter((p) => selectedCategories.includes(p.category))
+          : list;
+        renderProducts(filtered);
+      });
+    }
+
+    function renderProducts(list) {
+      document.getElementById('result-count').textContent = `${list.length} products found`;
+      document.getElementById('products').innerHTML = list.length ? list.map((p, i) => `
+        <div class="card">
+          ${i % 4 === 0 ? '<span class="badge">Best Seller</span>' : ''}
+          <img src="${p.image}" onerror="this.onerror=null;this.src=fallbackImg('${p.name.replace(/'/g,"")}','${p.category}')" alt="${p.name}">
+          <div class="info">
+            <h3>${p.name}</h3>
+            <div class="rating">★★★★☆ <span>(${(Math.random()*80+20|0)} reviews)</span></div>
+            <div class="price">₹${p.price} <small>₹${Math.round(p.price*1.25)}</small></div>
+            <a class="btn btn-light" href="/product.html?id=${p._id}">View Details</a>
+            <button onclick='addToCart(${JSON.stringify({ _id: p._id, name: p.name, price: p.price, image: p.image })})'>Add to Cart</button>
+          </div>
+        </div>`).join('') : '<p>No products match your filters.</p>';
+    }
+
+    document.getElementById('search').addEventListener('keyup', (e) => { if (e.key === 'Enter') applyFilters(); });
+
+    applyFilters();
+  </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="nav"></nav>
+  <div class="box">
+    <h2 id="title">Login</h2>
+    <input id="name" placeholder="Name" style="display:none">
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <p class="error" id="error"></p>
+    <button onclick="submitForm()" style="width:100%" id="btn">Login</button>
+    <p style="margin-top:15px">
+      <a href="#" onclick="toggle()" id="toggleLink">New user? Register</a>
+    </p>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let isLogin = true;
+
+    function toggle() {
+      isLogin = !isLogin;
+      document.getElementById('title').textContent = isLogin ? 'Login' : 'Register';
+      document.getElementById('btn').textContent = isLogin ? 'Login' : 'Register';
+      document.getElementById('name').style.display = isLogin ? 'none' : 'block';
+      document.getElementById('toggleLink').textContent = isLogin ? 'New user? Register' : 'Already have account? Login';
+    }
+
+    async function submitForm() {
+      const body = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      };
+      try {
+        const data = await api(isLogin ? '/api/login' : '/api/register', 'POST', body);
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('name', data.name);
+        location.href = '/';
+      } catch (e) {
+        document.getElementById('error').textContent = e.message;
+      }
+    }
+  </script>
+</body>
+</html>
